@@ -6,16 +6,35 @@ import { TurnstileWidget } from "@/components/forms/turnstile";
 export function ContactForm() {
   const [status, setStatus] = useState<"idle"|"sending"|"success"|"error">("idle");
   const [token, setToken] = useState("");
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setStatus("sending");
-    const form = new FormData(event.currentTarget);
+    event.preventDefault();
+    setStatus("sending");
+
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const payload = Object.fromEntries(form.entries());
+
     try {
-      const response = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...payload, turnstileToken: token }) });
-      setStatus(response.ok ? "success" : "error");
-      if (response.ok) { event.currentTarget.reset(); setToken(""); }
-    } catch { setStatus("error"); }
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, turnstileToken: token })
+      });
+
+      if (!response.ok) {
+        setStatus("error");
+        return;
+      }
+
+      formElement.reset();
+      setToken("");
+      setStatus("success");
+    } catch {
+      setStatus("error");
+    }
   }
+
   return <form className="card form-grid" onSubmit={submit} noValidate>
     <div className="form-field"><label htmlFor="name">Name *</label><input id="name" name="name" required maxLength={100}/></div>
     <div className="form-field"><label htmlFor="company">Company</label><input id="company" name="company" maxLength={150}/></div>
